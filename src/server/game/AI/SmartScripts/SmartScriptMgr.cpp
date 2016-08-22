@@ -1146,6 +1146,15 @@ bool SmartAIMgr::IsEventValid(SmartScriptHolder& e)
             }
             break;
         }
+        case SMART_ACTION_CHANGE_SEAT:
+        {
+            if (e.action.changeSeatGPLP.currSeat == e.action.changeSeatGPLP.newSeat)
+            {
+                TC_LOG_ERROR("sql.sql", "SmartAIMgr: Event SMART_ACTION_CHANGE_SEAT has newSeat(%u) == currentSeat(%u), skipped.", e.action.changeSeatGPLP.newSeat, e.action.changeSeatGPLP.currSeat);
+                return false;
+            }
+            break;
+        }
         case SMART_ACTION_START_CLOSEST_WAYPOINT:
         case SMART_ACTION_FOLLOW:
         case SMART_ACTION_SET_ORIENTATION:
