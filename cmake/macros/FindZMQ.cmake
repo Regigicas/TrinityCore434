@@ -50,7 +50,7 @@ if (MSVC)
   string(REGEX REPLACE "Visual Studio ([0-9]+).*" "\\1" ZMQ_VS_VERSION ${CMAKE_GENERATOR})
 
   # HACK - zmq doesnt ship libs for VS 2015
-  if (${ZMQ_VS_VERSION} EQUAL 14)
+  if (${ZMQ_VS_VERSION} EQUAL 14 OR ${ZMQ_VS_VERSION} EQUAL 15)
     set(ZMQ_VS_VERSION 12)
   endif()
 
