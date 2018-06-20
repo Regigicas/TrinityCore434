@@ -1029,6 +1029,7 @@ void ConditionMgr::LoadConditions(bool isReload)
                     ++count;
                     continue;
                 }
+                case CONDITION_SOURCE_TYPE_TERRAIN_SWAP:
                 default:
                     break;
             }
@@ -1558,6 +1559,7 @@ bool ConditionMgr::isSourceTypeValid(Condition* cond)
         case CONDITION_SOURCE_TYPE_GOSSIP_MENU_OPTION:
         case CONDITION_SOURCE_TYPE_SMART_EVENT:
         case CONDITION_SOURCE_TYPE_NONE:
+        case CONDITION_SOURCE_TYPE_TERRAIN_SWAP:
         default:
             break;
     }
