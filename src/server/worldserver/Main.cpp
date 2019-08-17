@@ -21,8 +21,6 @@
 /// \file
 
 #include "Common.h"
-#include "Commands.h"
-#include "ZmqContext.h"
 #include "DatabaseEnv.h"
 #include "AsyncAcceptor.h"
 #include "RASession.h"
@@ -43,11 +41,11 @@
 #include "SystemConfig.h"
 #include "WorldSocket.h"
 #include "WorldSocketMgr.h"
-#include "BattlenetServerManager.h"
+#include "IoContext.h"
+#include "DeadlineTimer.h"
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/signal_set.hpp>
 #include <boost/program_options.hpp>
 
 using namespace boost::program_options;
@@ -72,8 +70,8 @@ char serviceDescription[] = "TrinityCore World of Warcraft emulator world servic
 int m_ServiceStatus = -1;
 #endif
 
-boost::asio::io_service _ioService;
-boost::asio::deadline_timer _freezeCheckTimer(_ioService);
+Trinity::Asio::IoContext _ioContext;
+Trinity::Asio::DeadlineTimer _freezeCheckTimer(_ioContext);
 uint32 _worldLoopCounter(0);
 uint32 _lastChangeMsTime(0);
 uint32 _maxCoreStuckTimeInMs(0);
@@ -81,11 +79,11 @@ uint32 _maxCoreStuckTimeInMs(0);
 WorldDatabaseWorkerPool WorldDatabase;                      ///< Accessor to the world database
 CharacterDatabaseWorkerPool CharacterDatabase;              ///< Accessor to the character database
 LoginDatabaseWorkerPool LoginDatabase;                      ///< Accessor to the realm/login database
-Battlenet::RealmHandle realmHandle;                         ///< Id of the realm
+uint32 realmID;                                             ///< Id of the realm
 
 void SignalHandler(const boost::system::error_code& error, int signalNumber);
 void FreezeDetectorHandler(const boost::system::error_code& error);
-AsyncAcceptor* StartRaSocketAcceptor(boost::asio::io_service& ioService);
+AsyncAcceptor* StartRaSocketAcceptor(Trinity::Asio::IoContext& ioContext);
 bool StartDB();
 void StopDB();
 void WorldUpdateLoop();
@@ -124,10 +122,10 @@ extern int main(int argc, char** argv)
     if (sConfigMgr->GetBoolDefault("Log.Async.Enable", false))
     {
         // If logs are supposed to be handled async then we need to pass the io_service into the Log singleton
-        Log::instance(&_ioService);
+        Log::instance(&_ioContext);
     }
 
-    TC_LOG_INFO("server.worldserver", "%s (worldserver-daemon)", _FULLVERSION);
+    TC_LOG_INFO("server.worldserver", "%s (worldserver-daemon)", _TRINITY_FULLVERSION);
     TC_LOG_INFO("server.worldserver", "<Ctrl-C> to stop.\n");
     TC_LOG_INFO("server.worldserver", " ______                       __");
     TC_LOG_INFO("server.worldserver", "/\\__  _\\       __          __/\\ \\__");
@@ -163,7 +161,7 @@ extern int main(int argc, char** argv)
     }
 
     // Set signal handlers (this must be done before starting io_service threads, because otherwise they would unblock and exit)
-    boost::asio::signal_set signals(_ioService, SIGINT, SIGTERM);
+    boost::asio::signal_set signals(_ioContext, SIGINT, SIGTERM);
 #if PLATFORM == PLATFORM_WINDOWS
     signals.add(SIGBREAK);
 #endif
@@ -177,7 +175,7 @@ extern int main(int argc, char** argv)
         numThreads = 1;
 
     for (int i = 0; i < numThreads; ++i)
-        threadPool.push_back(std::thread(boost::bind(&boost::asio::io_service::run, &_ioService)));
+        threadPool.push_back(std::thread(boost::bind(&Trinity::Asio::IoContext::run, &_ioContext)));
 
     // Set process priority according to configuration settings
     SetProcessPriority("server.worldserver");
@@ -190,7 +188,7 @@ extern int main(int argc, char** argv)
     }
 
     // Set server offline (not connectable)
-    LoginDatabase.DirectPExecute("UPDATE realmlist SET flag = (flag & ~%u) | %u WHERE id = '%d'", REALM_FLAG_OFFLINE, REALM_FLAG_INVALID, realmHandle.Index);
+    LoginDatabase.DirectPExecute("UPDATE realmlist SET flag = (flag & ~%u) | %u WHERE id = '%d'", REALM_FLAG_OFFLINE, REALM_FLAG_INVALID, realmID);
 
     // Initialize the World
     sWorld->SetInitialWorldSettings();
@@ -209,7 +207,7 @@ extern int main(int argc, char** argv)
     // Start the Remote Access port (acceptor) if enabled
     AsyncAcceptor* raAcceptor = nullptr;
     if (sConfigMgr->GetBoolDefault("Ra.Enable", false))
-        raAcceptor = StartRaSocketAcceptor(_ioService);
+        raAcceptor = StartRaSocketAcceptor(_ioContext);
 
     // Start soap serving thread if enabled
     std::thread* soapThread = nullptr;
@@ -222,10 +220,10 @@ extern int main(int argc, char** argv)
     uint16 worldPort = uint16(sWorld->getIntConfig(CONFIG_PORT_WORLD));
     std::string worldListener = sConfigMgr->GetStringDefault("BindIP", "0.0.0.0");
 
-    sWorldSocketMgr.StartNetwork(_ioService, worldListener, worldPort);
+    sWorldSocketMgr.StartWorldNetwork(_ioContext, worldListener, worldPort);
 
     // Set server online (allow connecting now)
-    LoginDatabase.DirectPExecute("UPDATE realmlist SET flag = flag & ~%u, population = 0 WHERE id = '%u'", REALM_FLAG_INVALID, realmHandle.Index);
+    LoginDatabase.DirectPExecute("UPDATE realmlist SET flag = flag & ~%u, population = 0 WHERE id = '%u'", REALM_FLAG_INVALID, realmID);
 
     // Start the freeze check callback cycle in 5 seconds (cycle itself is 1 sec)
     if (int coreStuckTime = sConfigMgr->GetIntDefault("MaxCoreStuckTime", 0))
@@ -236,11 +234,7 @@ extern int main(int argc, char** argv)
         TC_LOG_INFO("server.worldserver", "Starting up anti-freeze thread (%u seconds max stuck time)...", coreStuckTime);
     }
 
-    sIpcContext->Initialize();
-
-    sBattlenetServer.InitializeConnection();
-
-    TC_LOG_INFO("server.worldserver", "%s (worldserver-daemon) ready...", _FULLVERSION);
+    TC_LOG_INFO("server.worldserver", "%s (worldserver-daemon) ready...", _TRINITY_FULLVERSION);
 
     sScriptMgr->OnStartup();
 
@@ -250,10 +244,6 @@ extern int main(int argc, char** argv)
     ShutdownThreadPool(threadPool);
 
     sScriptMgr->OnShutdown();
-
-    sIpcContext->Close();
-
-    sBattlenetServer.CloseConnection();
 
     sWorld->KickAll();                                       // save and kick all players
     sWorld->UpdateSessions(1);                             // real players unload required UpdateSessions call
@@ -270,7 +260,7 @@ extern int main(int argc, char** argv)
     sOutdoorPvPMgr->Die();
 
     // set server offline
-    LoginDatabase.DirectPExecute("UPDATE realmlist SET flag = flag | %u WHERE id = '%d'", REALM_FLAG_OFFLINE, realmHandle.Index);
+    LoginDatabase.DirectPExecute("UPDATE realmlist SET flag = flag | %u WHERE id = '%d'", REALM_FLAG_OFFLINE, realmID);
 
     // Clean up threads if any
     if (soapThread != nullptr)
@@ -363,7 +353,7 @@ void ShutdownThreadPool(std::vector<std::thread>& threadPool)
 {
     sScriptMgr->OnNetworkStop();
 
-    _ioService.stop();
+    _ioContext.stop();
 
     for (auto& thread : threadPool)
     {
@@ -442,12 +432,12 @@ void FreezeDetectorHandler(const boost::system::error_code& error)
     }
 }
 
-AsyncAcceptor* StartRaSocketAcceptor(boost::asio::io_service& ioService)
+AsyncAcceptor* StartRaSocketAcceptor(Trinity::Asio::IoContext& ioContext)
 {
     uint16 raPort = uint16(sConfigMgr->GetIntDefault("Ra.Port", 3443));
     std::string raListener = sConfigMgr->GetStringDefault("Ra.IP", "0.0.0.0");
 
-    AsyncAcceptor* acceptor = new AsyncAcceptor(ioService, raListener, raPort);
+    AsyncAcceptor* acceptor = new AsyncAcceptor(ioContext, raListener, raPort);
     acceptor->AsyncAccept<RASession>();
     return acceptor;
 }
@@ -533,30 +523,20 @@ bool StartDB()
     }
 
     ///- Get the realm Id from the configuration file
-    realmHandle.Index = sConfigMgr->GetIntDefault("RealmID", 0);
-    if (!realmHandle.Index)
+    realmID = sConfigMgr->GetIntDefault("RealmID", 0);
+    if (realmID <= 0)
     {
         TC_LOG_ERROR("server.worldserver", "Realm ID not defined in configuration file");
         return false;
     }
 
-    QueryResult realmIdQuery = LoginDatabase.PQuery("SELECT `Region`,`Battlegroup` FROM `realmlist` WHERE `id`=%u", realmHandle.Index);
-    if (!realmIdQuery)
-    {
-        TC_LOG_ERROR("server.worldserver", "Realm id %u not defined in realmlist table", realmHandle.Index);
-        return false;
-    }
-
-    realmHandle.Region = (*realmIdQuery)[0].GetUInt8();
-    realmHandle.Battlegroup = (*realmIdQuery)[1].GetUInt8();
-
-    TC_LOG_INFO("server.worldserver", "Realm running as realm ID %u region %u battlegroup %u", realmHandle.Index, uint32(realmHandle.Region), uint32(realmHandle.Battlegroup));
+    TC_LOG_INFO("server.worldserver", "Realm running as realm ID %u.", realmID);
 
     ///- Clean the database before starting
     ClearOnlineAccounts();
 
     ///- Insert version info into DB
-    WorldDatabase.PExecute("UPDATE version SET core_version = '%s', core_revision = '%s'", _FULLVERSION, _HASH);        // One-time query
+    WorldDatabase.PExecute("UPDATE version SET core_version = '%s', core_revision = '%s'", _TRINITY_FULLVERSION, _HASH);        // One-time query
 
     sWorld->LoadDBVersion();
 
@@ -577,7 +557,7 @@ void StopDB()
 void ClearOnlineAccounts()
 {
     // Reset online status for all accounts with characters on the current realm
-    LoginDatabase.DirectPExecute("UPDATE account SET online = 0 WHERE online > 0 AND id IN (SELECT acctid FROM realmcharacters WHERE realmid = %d)", realmHandle.Index);
+    LoginDatabase.DirectPExecute("UPDATE account SET online = 0 WHERE online > 0 AND id IN (SELECT acctid FROM realmcharacters WHERE realmid = %d)", realmID);
 
     // Reset online status for all characters
     CharacterDatabase.DirectExecute("UPDATE characters SET online = 0 WHERE online <> 0");

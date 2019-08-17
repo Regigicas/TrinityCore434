@@ -7,9 +7,15 @@ if(WIN32)
     elseif(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.10)
       set(BOOST_LIBRARYDIR ${BOOST_ROOT}/lib${PLATFORM}-msvc-14.0)
     else()
-      list(APPEND BOOST_LIBRARYDIR
-        ${BOOST_ROOT}/lib${PLATFORM}-msvc-14.1
-        ${BOOST_ROOT}/lib${PLATFORM}-msvc-14.0)
+      if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.20)
+        list(APPEND BOOST_LIBRARYDIR
+          ${BOOST_ROOT}/lib${PLATFORM}-msvc-14.1
+          ${BOOST_ROOT}/lib${PLATFORM}-msvc-14.0 )
+      else()
+        list(APPEND BOOST_LIBRARYDIR
+          ${BOOST_ROOT}/lib${PLATFORM}-msvc-14.2
+          ${BOOST_ROOT}/lib${PLATFORM}-msvc-14.1 )
+      endif()
     endif()
   else()
     message(FATAL_ERROR "No BOOST_ROOT environment variable could be found! Please make sure it is set and the points to your Boost installation.")
@@ -22,10 +28,13 @@ if(WIN32)
   add_definitions(-D_WIN32_WINNT=0x0601)
 endif()
 
-find_package(Boost 1.51 REQUIRED system filesystem thread program_options iostreams regex)
+find_package(Boost 1.55 REQUIRED system filesystem thread program_options iostreams regex)
 add_definitions(-DBOOST_DATE_TIME_NO_LIB)
 add_definitions(-DBOOST_REGEX_NO_LIB)
 add_definitions(-DBOOST_CHRONO_NO_LIB)
+add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE)
+add_definitions(-DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
+add_definitions(-DBOOST_ASIO_NO_DEPRECATED)
 
 # Find if Boost was compiled in C++03 mode because it requires -DBOOST_NO_CXX11_SCOPED_ENUMS
 

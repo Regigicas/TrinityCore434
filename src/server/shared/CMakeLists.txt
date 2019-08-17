@@ -12,6 +12,7 @@ if( USE_COREPCH )
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
+file(GLOB_RECURSE sources_Asio Asio/*.cpp Asio/*.h)
 file(GLOB_RECURSE sources_Configuration Configuration/*.cpp Configuration/*.h)
 file(GLOB_RECURSE sources_Cryptography Cryptography/*.cpp Cryptography/*.h)
 file(GLOB_RECURSE sources_Database Database/*.cpp Database/*.h)
@@ -41,6 +42,7 @@ endif()
 
 set(shared_STAT_SRCS
   ${shared_STAT_SRCS}
+  ${sources_Asio}
   ${sources_Configuration}
   ${sources_Cryptography}
   ${sources_Database}
@@ -63,6 +65,7 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/dep/utf8cpp
   ${CMAKE_SOURCE_DIR}/src/server
   ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/Asio
   ${CMAKE_CURRENT_SOURCE_DIR}/Configuration
   ${CMAKE_CURRENT_SOURCE_DIR}/Cryptography
   ${CMAKE_CURRENT_SOURCE_DIR}/Database

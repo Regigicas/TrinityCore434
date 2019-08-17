@@ -36,7 +36,7 @@ public:
         delete[] _threads;
     }
 
-    virtual bool StartNetwork(boost::asio::io_service& service, std::string const& bindIp, uint16 port)
+    virtual bool StartNetwork(Trinity::Asio::IoContext& ioContext, std::string const& bindIp, uint16 port)
     {
         _threadCount = sConfigMgr->GetIntDefault("Network.Threads", 1);
 
@@ -46,7 +46,7 @@ public:
             return false;
         }
 
-        _acceptor = new AsyncAcceptor(service, bindIp, port);
+        _acceptor = new AsyncAcceptor(ioContext, bindIp, port);
         _threads = CreateThreads();
 
         ASSERT(_threads);

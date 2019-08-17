@@ -24,7 +24,6 @@
 #define __WORLD_H
 
 #include "Common.h"
-#include "Commands.h"
 #include "ObjectGuid.h"
 #include "Timer.h"
 #include "SharedDefines.h"
@@ -881,7 +880,7 @@ class World
         std::deque<std::future<PreparedQueryResult>> m_realmCharCallbacks;
 };
 
-extern Battlenet::RealmHandle realmHandle;
+extern uint32 realmID;
 
 #define sWorld World::instance()
 #endif

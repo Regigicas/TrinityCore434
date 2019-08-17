@@ -36,7 +36,6 @@ endif()
 
 if(SERVERS)
   add_subdirectory(gsoap)
-  add_subdirectory(zmqpp)
 endif()
 
 if(TOOLS)

@@ -47,7 +47,6 @@
 #include "Transport.h"
 #include "WardenWin.h"
 #include "WardenMac.h"
-#include "BattlenetServerManager.h"
 
 namespace {
 
@@ -98,7 +97,7 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
 }
 
 /// WorldSession constructor
-WorldSession::WorldSession(uint32 id, uint32 battlenetAccountId, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter):
+WorldSession::WorldSession(uint32 id, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter):
     m_muteTime(mute_time),
     m_timeOutTime(0),
     AntiDOS(this),
@@ -107,7 +106,6 @@ WorldSession::WorldSession(uint32 id, uint32 battlenetAccountId, std::shared_ptr
     m_Socket(sock),
     _security(sec),
     _accountId(id),
-    _battlenetAccountId(battlenetAccountId),
     m_expansion(expansion),
     _warden(NULL),
     _logoutTime(0),
@@ -584,7 +582,7 @@ void WorldSession::LogoutPlayer(bool save)
         TC_LOG_INFO("entities.player.character", "Account: %d (IP: %s) Logout Character:[%s] (GUID: %u) Level: %d",
             GetAccountId(), GetRemoteAddress().c_str(), _player->GetName().c_str(), _player->GetGUIDLow(), _player->getLevel());
 
-        sBattlenetServer.SendChangeToonOnlineState(GetBattlenetAccountId(), GetAccountId(), _player->GetGUID(), _player->GetName(), false);
+        //sBattlenetServer.SendChangeToonOnlineState(GetBattlenetAccountId(), GetAccountId(), _player->GetGUID(), _player->GetName(), false);
 
         if (Map* _map = _player->FindMap())
             _map->RemovePlayerFromMap(_player, true);
@@ -1147,11 +1145,11 @@ void WorldSession::LoadPermissions()
     AccountMgr::GetName(id, name);
     uint8 secLevel = GetSecurity();
 
-    _RBACData = new rbac::RBACData(id, name, realmHandle.Index, secLevel);
+    _RBACData = new rbac::RBACData(id, name, realmID, secLevel);
     _RBACData->LoadFromDB();
 
     TC_LOG_DEBUG("rbac", "WorldSession::LoadPermissions [AccountId: %u, Name: %s, realmId: %d, secLevel: %u]",
-                   id, name.c_str(), realmHandle.Index, secLevel);
+                   id, name.c_str(), realmID, secLevel);
 }
 
 rbac::RBACData* WorldSession::GetRBACData()
@@ -1166,7 +1164,7 @@ bool WorldSession::HasPermission(uint32 permission)
 
     bool hasPermission = _RBACData->HasPermission(permission);
     TC_LOG_DEBUG("rbac", "WorldSession::HasPermission [AccountId: %u, Name: %s, realmId: %d]",
-                   _RBACData->GetId(), _RBACData->GetName().c_str(), realmHandle.Index);
+                   _RBACData->GetId(), _RBACData->GetName().c_str(), realmID);
 
     return hasPermission;
 }
@@ -1174,7 +1172,7 @@ bool WorldSession::HasPermission(uint32 permission)
 void WorldSession::InvalidateRBACData()
 {
     TC_LOG_DEBUG("rbac", "WorldSession::Invalidaterbac::RBACData [AccountId: %u, Name: %s, realmId: %d]",
-                   _RBACData->GetId(), _RBACData->GetName().c_str(), realmHandle.Index);
+                   _RBACData->GetId(), _RBACData->GetName().c_str(), realmID);
     delete _RBACData;
     _RBACData = NULL;
 }

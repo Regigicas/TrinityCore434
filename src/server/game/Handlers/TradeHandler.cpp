@@ -35,7 +35,7 @@ void WorldSession::SendTradeStatus(TradeStatusInfo const& info)
     Player* trader = GetPlayer()->GetTrader();
 
     WorldPacket data(SMSG_TRADE_STATUS, 13);
-    data.WriteBit(trader ? (trader->GetSession()->GetBattlenetAccountId() == GetBattlenetAccountId()) : 0); // IsSameBnetAccount, used for trading heirlooms and other battle.net bound items with your other accounts
+    data.WriteBit(0); // IsSameBnetAccount, used for trading heirlooms and other battle.net bound items with your other accounts
     data.WriteBits(info.Status, 5);
 
     switch (info.Status)

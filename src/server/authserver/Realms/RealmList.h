@@ -21,10 +21,9 @@
 
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/io_service.hpp>
+#include "IpAddress.h"
+#include "IpNetwork.h"
 #include "Common.h"
-
-using namespace boost::asio;
 
 enum RealmFlags
 {
@@ -42,9 +41,9 @@ enum RealmFlags
 // Storage object for a realm
 struct Realm
 {
-    ip::address ExternalAddress;
-    ip::address LocalAddress;
-    ip::address LocalSubnetMask;
+    boost::asio::ip::address ExternalAddress;
+    boost::asio::ip::address LocalAddress;
+    boost::asio::ip::address LocalSubnetMask;
     uint16 port;
     std::string name;
     uint8 icon;
@@ -55,7 +54,7 @@ struct Realm
     float populationLevel;
     uint32 gamebuild;
 
-    ip::tcp::endpoint GetAddressForClient(ip::address const& clientAddr) const;
+    boost::asio::ip::tcp::endpoint GetAddressForClient(boost::asio::ip::address const& clientAddr) const;
 };
 
 /// Storage object for the list of realms on the server
@@ -72,7 +71,7 @@ public:
 
     ~RealmList();
 
-    void Initialize(boost::asio::io_service& ioService, uint32 updateInterval);
+    void Initialize(Trinity::Asio::IoContext& ioContext, uint32 updateInterval);
 
     void UpdateIfNeed();
 
@@ -86,8 +85,8 @@ private:
     RealmList();
 
     void UpdateRealms(bool init = false);
-    void UpdateRealm(uint32 id, const std::string& name, ip::address const& address, ip::address const& localAddr,
-        ip::address const& localSubmask, uint16 port, uint8 icon, RealmFlags flag, uint8 timezone, AccountTypes allowedSecurityLevel, float population, uint32 build);
+    void UpdateRealm(uint32 id, const std::string& name, boost::asio::ip::address&& address, boost::asio::ip::address&& localAddr,
+        boost::asio::ip::address&& localSubmask, uint16 port, uint8 icon, RealmFlags flag, uint8 timezone, AccountTypes allowedSecurityLevel, float population, uint32 build);
 
     RealmMap m_realms;
     uint32   m_UpdateInterval;

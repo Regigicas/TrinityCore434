@@ -23,7 +23,6 @@
 #include <cstdio>
 
 #ifdef WIN32
-#define snprintf _snprintf
 #endif
 
 char const* GetPlainName(char const* FileName)

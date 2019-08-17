@@ -29,7 +29,7 @@
 #include <cstdio>
 #include <sstream>
 
-Log::Log() : _ioService(nullptr), _strand(nullptr)
+Log::Log() : _ioContext(nullptr), _strand(nullptr)
 {
     m_logsTimestamp = "_" + GetTimestampStr();
     LoadFromConfig();
@@ -273,12 +273,10 @@ void Log::write(LogMessage* msg) const
     Logger const* logger = GetLoggerByType(msg->type);
     msg->text.append("\n");
 
-    if (_ioService)
+    if (_ioContext)
     {
-        auto logOperation = std::shared_ptr<LogOperation>(new LogOperation(logger, msg));
-
-        _ioService->post(_strand->wrap([logOperation](){ logOperation->call(); }));
-
+        std::shared_ptr<LogOperation> logOperation = std::make_shared<LogOperation>(logger, std::move(msg));
+        Trinity::Asio::post(*_ioContext, Trinity::Asio::bind_executor(*_strand, [logOperation]() { logOperation->call(); }));
     }
     else
     {

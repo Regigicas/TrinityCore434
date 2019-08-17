@@ -23,7 +23,6 @@
 #include "ScriptMgr.h"
 #include "SHA1.h"
 #include "PacketLog.h"
-#include "BattlenetAccountMgr.h"
 #include <memory>
 
 using boost::asio::ip::tcp;
@@ -353,8 +352,8 @@ void WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     account = recvPacket.ReadString(accountNameLength);
 
     // Get the account information from the auth database
-    //         0           1        2       3          4         5       6          7   8                  9
-    // SELECT id, sessionkey, last_ip, locked, expansion, mutetime, locale, recruiter, os, battlenet_account FROM account WHERE username = ?
+    //         0           1        2       3          4         5       6          7   8
+    // SELECT id, sessionkey, last_ip, locked, expansion, mutetime, locale, recruiter, os FROM account WHERE username = ?
     PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_SEL_ACCOUNT_INFO_BY_NAME);
     stmt->setString(0, account);
 
@@ -406,7 +405,7 @@ void WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
         return;
     }
 
-    if (realmIndex != realmHandle.Index)
+    if (realmIndex != realmID)
     {
         SendAuthResponseError(REALM_LIST_REALM_NOT_FOUND);
         TC_LOG_ERROR("network", "WorldSocket::HandleAuthSession: Sent Auth Response (bad realm).");
@@ -477,15 +476,11 @@ void WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
 
     uint32 recruiter = fields[7].GetUInt32();
 
-    uint32 battlenetAccountId = 0;
-    if (loginServerType == 1)
-        battlenetAccountId = fields[9].GetUInt32();
-
     // Checks gmlevel per Realm
     stmt = LoginDatabase.GetPreparedStatement(LOGIN_GET_GMLEVEL_BY_REALMID);
 
     stmt->setUInt32(0, id);
-    stmt->setInt32(1, int32(realmHandle.Index));
+    stmt->setInt32(1, int32(realmID));
 
     result = LoginDatabase.Query(stmt);
 
@@ -552,7 +547,7 @@ void WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     // At this point, we can safely hook a successful login
     sScriptMgr->OnAccountLogin(id);
 
-    _worldSession = new WorldSession(id, battlenetAccountId, shared_from_this(), AccountTypes(security), expansion, mutetime, locale, recruiter, isRecruiter);
+    _worldSession = new WorldSession(id, shared_from_this(), AccountTypes(security), expansion, mutetime, locale, recruiter, isRecruiter);
     _worldSession->LoadGlobalAccountData();
     _worldSession->LoadTutorialsData();
     _worldSession->ReadAddonsInfo(addonsData);

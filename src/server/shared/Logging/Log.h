@@ -22,9 +22,9 @@
 #include "Define.h"
 #include "Appender.h"
 #include "Logger.h"
+#include "IoContext.h"
+#include "Strand.h"
 #include <stdarg.h>
-#include <boost/asio/io_service.hpp>
-#include <boost/asio/strand.hpp>
 
 #include <unordered_map>
 #include <string>
@@ -41,14 +41,14 @@ class Log
 
     public:
 
-        static Log* instance(boost::asio::io_service* ioService = nullptr)
+        static Log* instance(Trinity::Asio::IoContext* ioContext = nullptr)
         {
             static Log instance;
 
-            if (ioService != nullptr)
+            if (ioContext != nullptr)
             {
-                instance._ioService = ioService;
-                instance._strand = new boost::asio::strand(*ioService);
+                instance._ioContext = ioContext;
+                instance._strand = new Trinity::Asio::Strand(*ioContext);
             }
 
             return &instance;
@@ -86,8 +86,8 @@ class Log
         std::string m_logsDir;
         std::string m_logsTimestamp;
 
-        boost::asio::io_service* _ioService;
-        boost::asio::strand* _strand;
+        Trinity::Asio::IoContext* _ioContext;
+        Trinity::Asio::Strand* _strand;
 };
 
 inline Logger const* Log::GetLoggerByType(std::string const& type) const

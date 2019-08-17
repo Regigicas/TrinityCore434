@@ -346,9 +346,9 @@ bool AuthSession::HandleLogonChallenge()
                     unk3.SetRand(16 * 8);
 
                     // Fill the response packet with the result
-                    if (fields[9].GetUInt32() && AuthHelper::IsBuildSupportingBattlenet(_build))
-                        pkt << uint8(WOW_FAIL_USE_BATTLENET);
-                    else if (AuthHelper::IsAcceptedClientBuild(_build))
+                    //if (fields[9].GetUInt32() && AuthHelper::IsBuildSupportingBattlenet(_build))
+                    //    pkt << uint8(WOW_FAIL_USE_BATTLENET);
+                    /*else*/ if (AuthHelper::IsAcceptedClientBuild(_build))
                         pkt << uint8(WOW_SUCCESS);
                     else
                         pkt << uint8(WOW_FAIL_VERSION_INVALID);

@@ -28,7 +28,6 @@
 #include "DBCStores.h"
 #include "Item.h"
 #include "AccountMgr.h"
-#include "BattlenetAccountMgr.h"
 #include "GuildMgr.h"
 
 bool WorldSession::CanOpenMailBox(ObjectGuid guid)
@@ -197,10 +196,9 @@ void WorldSession::HandleSendMail(WorldPacket& recvData)
     Player* receiver = ObjectAccessor::FindConnectedPlayer(receiverGuid);
 
     uint32 receiverTeam = 0;
-    uint8 mailsCount = 0;                                  //do not allow to send to one player more than 100 mails
+    uint8 mailsCount = 0;                                  // do not allow to send to one player more than 100 mails
     uint8 receiverLevel = 0;
     uint32 receiverAccountId = 0;
-    uint32 receiverBnetAccountId = 0;
 
     if (receiver)
     {
@@ -208,7 +206,6 @@ void WorldSession::HandleSendMail(WorldPacket& recvData)
         mailsCount = receiver->GetMailSize();
         receiverLevel = receiver->getLevel();
         receiverAccountId = receiver->GetSession()->GetAccountId();
-        receiverBnetAccountId = receiver->GetSession()->GetBattlenetAccountId();
     }
     else
     {
@@ -235,7 +232,6 @@ void WorldSession::HandleSendMail(WorldPacket& recvData)
         }
 
         receiverAccountId = sObjectMgr->GetPlayerAccountIdByGUID(receiverGuid);
-        receiverBnetAccountId = Battlenet::AccountMgr::GetIdByGameAccount(receiverAccountId);
     }
 
     // do not allow to have more than 100 mails in mailbox.. mails count is in opcode uint8!!! - so max can be 255..
@@ -299,11 +295,8 @@ void WorldSession::HandleSendMail(WorldPacket& recvData)
 
         if (item->IsBoundAccountWide() && item->IsSoulBound() && player->GetSession()->GetAccountId() != receiverAccountId)
         {
-            if (!item->IsBattlenetAccountBound() || !player->GetSession()->GetBattlenetAccountId() || player->GetSession()->GetBattlenetAccountId() != receiverBnetAccountId)
-            {
-                player->SendMailResult(0, MAIL_SEND, MAIL_ERR_EQUIP_ERROR, EQUIP_ERR_NOT_SAME_ACCOUNT);
-                return;
-            }
+            player->SendMailResult(0, MAIL_SEND, MAIL_ERR_EQUIP_ERROR, EQUIP_ERR_NOT_SAME_ACCOUNT);
+            return;
         }
 
         if (item->GetTemplate()->Flags & ITEM_PROTO_FLAG_CONJURED || item->GetUInt32Value(ITEM_FIELD_DURATION))

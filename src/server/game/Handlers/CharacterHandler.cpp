@@ -47,7 +47,6 @@
 #include "World.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
-#include "BattlenetServerManager.h"
 
 class LoginQueryHolder : public SQLQueryHolder
 {
@@ -690,13 +689,13 @@ void WorldSession::HandleCharCreateCallback(PreparedQueryResult result, Characte
 
             PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_DEL_REALM_CHARACTERS_BY_REALM);
             stmt->setUInt32(0, GetAccountId());
-            stmt->setUInt32(1, realmHandle.Index);
+            stmt->setUInt32(1, realmID);
             trans->Append(stmt);
 
             stmt = LoginDatabase.GetPreparedStatement(LOGIN_INS_REALM_CHARACTERS);
             stmt->setUInt32(0, createInfo->CharCount);
             stmt->setUInt32(1, GetAccountId());
-            stmt->setUInt32(2, realmHandle.Index);
+            stmt->setUInt32(2, realmID);
             trans->Append(stmt);
 
             LoginDatabase.CommitTransaction(trans);
@@ -956,7 +955,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
         // send server info
         if (sWorld->getIntConfig(CONFIG_ENABLE_SINFO_LOGIN) == 1)
-            chH.PSendSysMessage(_FULLVERSION);
+            chH.PSendSysMessage(_TRINITY_FULLVERSION);
 
         TC_LOG_DEBUG("network", "WORLD: Sent server info");
     }
@@ -1140,7 +1139,7 @@ void WorldSession::HandlePlayerLogin(LoginQueryHolder* holder)
 
     sScriptMgr->OnPlayerLogin(pCurrChar, firstLogin);
 
-    sBattlenetServer.SendChangeToonOnlineState(GetBattlenetAccountId(), GetAccountId(), _player->GetGUID(), _player->GetName(), true);
+    //sBattlenetServer.SendChangeToonOnlineState(GetBattlenetAccountId(), GetAccountId(), _player->GetGUID(), _player->GetName(), true);
 
     delete holder;
 }

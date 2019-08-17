@@ -86,6 +86,8 @@ find_path(MYSQL_INCLUDE_DIR
     /usr/local/include
     /usr/local/include/mysql
     /usr/local/mysql/include
+    "${PROGRAM_FILES_64}/MariaDB 10.4/include/mysql"
+    "${PROGRAM_FILES_32}/MariaDB 10.4/include/mysql"
     "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.7/include"
     "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.6/include"
     "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.5/include"
@@ -140,8 +142,11 @@ if( WIN32 )
   find_library( MYSQL_LIBRARY
     NAMES
       libmysql
+      libmariadb
     PATHS
       ${MYSQL_ADD_LIBRARIES_PATH}
+      "${PROGRAM_FILES_64}/MariaDB 10.4/lib"
+      "${PROGRAM_FILES_32}/MariaDB 10.4/lib"
       "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.7/lib"
       "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.6/lib"
       "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.5/lib"
@@ -223,6 +228,8 @@ endif( UNIX )
 if( WIN32 )
     find_program(MYSQL_EXECUTABLE mysql
       PATHS
+        "${PROGRAM_FILES_64}/MariaDB 10.4/bin"
+        "${PROGRAM_FILES_32}/MariaDB 10.4/bin"
         "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.7/bin"
         "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.6/bin"
         "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.5/bin"

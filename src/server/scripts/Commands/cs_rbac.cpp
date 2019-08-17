@@ -157,7 +157,7 @@ public:
 
         if (!rdata)
         {
-            data->rbac = new rbac::RBACData(accountId, accountName, realmHandle.Index, AccountMgr::GetSecurity(accountId, realmHandle.Index));
+            data->rbac = new rbac::RBACData(accountId, accountName, realmID, AccountMgr::GetSecurity(accountId, realmID));
             data->rbac->LoadFromDB();
             data->needDelete = true;
         }

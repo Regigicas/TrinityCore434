@@ -33,10 +33,13 @@
 #include "RealmList.h"
 #include "SystemConfig.h"
 #include "Util.h"
+#include "IoContext.h"
+#include "DeadlineTimer.h"
 #include <cstdlib>
 #include <iostream>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/program_options.hpp>
+#include <boost/asio/signal_set.hpp>
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
 
@@ -53,8 +56,8 @@ void SignalHandler(const boost::system::error_code& error, int signalNumber);
 void KeepDatabaseAliveHandler(const boost::system::error_code& error);
 variables_map GetConsoleArguments(int argc, char** argv, std::string& configFile);
 
-boost::asio::io_service _ioService;
-boost::asio::deadline_timer _dbPingTimer(_ioService);
+Trinity::Asio::IoContext _ioContext;
+Trinity::Asio::DeadlineTimer _dbPingTimer(_ioContext);
 uint32 _dbPingInterval;
 LoginDatabaseWorkerPool LoginDatabase;
 
@@ -73,7 +76,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    TC_LOG_INFO("server.authserver", "%s (authserver)", _FULLVERSION);
+    TC_LOG_INFO("server.authserver", "%s (authserver)", _TRINITY_FULLVERSION);
     TC_LOG_INFO("server.authserver", "<Ctrl-C> to stop.\n");
     TC_LOG_INFO("server.authserver", "Using configuration file %s.", configFile.c_str());
     TC_LOG_INFO("server.authserver", "Using SSL version: %s (library: %s)", OPENSSL_VERSION_TEXT, SSLeay_version(SSLEAY_VERSION));
@@ -97,7 +100,7 @@ int main(int argc, char** argv)
         return 1;
 
     // Get the list of realms for the server
-    sRealmList->Initialize(_ioService, sConfigMgr->GetIntDefault("RealmsStateUpdateDelay", 20));
+    sRealmList->Initialize(_ioContext, sConfigMgr->GetIntDefault("RealmsStateUpdateDelay", 20));
 
     if (sRealmList->size() == 0)
     {
@@ -117,10 +120,10 @@ int main(int argc, char** argv)
 
     std::string bindIp = sConfigMgr->GetStringDefault("BindIP", "0.0.0.0");
 
-    sAuthSocketMgr.StartNetwork(_ioService, bindIp, port);
+    sAuthSocketMgr.StartNetwork(_ioContext, bindIp, port);
 
     // Set signal handlers
-    boost::asio::signal_set signals(_ioService, SIGINT, SIGTERM);
+    boost::asio::signal_set signals(_ioContext, SIGINT, SIGTERM);
 #if PLATFORM == PLATFORM_WINDOWS
     signals.add(SIGBREAK);
 #endif
@@ -135,7 +138,7 @@ int main(int argc, char** argv)
     _dbPingTimer.async_wait(KeepDatabaseAliveHandler);
 
     // Start the io service worker loop
-    _ioService.run();
+    _ioContext.run();
 
     // Close the Database Pool and library
     StopDB();
@@ -193,7 +196,7 @@ void StopDB()
 void SignalHandler(const boost::system::error_code& error, int /*signalNumber*/)
 {
     if (!error)
-        _ioService.stop();
+        _ioContext.stop();
 }
 
 void KeepDatabaseAliveHandler(const boost::system::error_code& error)
