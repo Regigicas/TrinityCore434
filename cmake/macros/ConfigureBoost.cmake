@@ -33,6 +33,7 @@ add_definitions(-DBOOST_DATE_TIME_NO_LIB)
 add_definitions(-DBOOST_REGEX_NO_LIB)
 add_definitions(-DBOOST_CHRONO_NO_LIB)
 add_definitions(-DBOOST_OPTIONAL_USE_OLD_DEFINITION_OF_NONE)
+add_definitions(-DBOOST_SERIALIZATION_NO_LIB)
 add_definitions(-DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
 add_definitions(-DBOOST_ASIO_NO_DEPRECATED)
 
