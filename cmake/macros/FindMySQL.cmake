@@ -86,8 +86,6 @@ find_path(MYSQL_INCLUDE_DIR
     /usr/local/include
     /usr/local/include/mysql
     /usr/local/mysql/include
-    "${PROGRAM_FILES_64}/MariaDB 10.4/include/mysql"
-    "${PROGRAM_FILES_32}/MariaDB 10.4/include/mysql"
     "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.7/include"
     "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.6/include"
     "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.5/include"
@@ -117,6 +115,10 @@ find_path(MYSQL_INCLUDE_DIR
     "$ENV{SystemDrive}/MySQL/MySQL Server 5.1/include"
     "c:/msys/local/include"
     "$ENV{MYSQL_ROOT}/include"
+    "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MariaDB 10.4;INSTALLDIR]/include/mysql"
+    "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MariaDB 10.4 (x64);INSTALLDIR]/include/mysql"
+    "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MariaDB 10.5;INSTALLDIR]/include/mysql"
+    "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MariaDB 10.5 (x64);INSTALLDIR]/include/mysql"
   DOC
     "Specify the directory containing mysql.h."
 )
@@ -141,12 +143,9 @@ endif( UNIX )
 if( WIN32 )
   find_library( MYSQL_LIBRARY
     NAMES
-      libmysql
-      libmariadb
+      libmysql libmariadb
     PATHS
       ${MYSQL_ADD_LIBRARIES_PATH}
-      "${PROGRAM_FILES_64}/MariaDB 10.4/lib"
-      "${PROGRAM_FILES_32}/MariaDB 10.4/lib"
       "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.7/lib"
       "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.6/lib"
       "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.5/lib"
@@ -192,6 +191,10 @@ if( WIN32 )
       "$ENV{SystemDrive}/MySQL/MySQL Server 5.1/lib/opt"
       "c:/msys/local/include"
       "$ENV{MYSQL_ROOT}/lib"
+      "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MariaDB 10.4;INSTALLDIR]/lib"
+      "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MariaDB 10.4 (x64);INSTALLDIR]/lib"
+      "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MariaDB 10.5;INSTALLDIR]/lib"
+      "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MariaDB 10.5 (x64);INSTALLDIR]/lib"
     DOC "Specify the location of the mysql library here."
   )
 endif( WIN32 )
@@ -228,8 +231,6 @@ endif( UNIX )
 if( WIN32 )
     find_program(MYSQL_EXECUTABLE mysql
       PATHS
-        "${PROGRAM_FILES_64}/MariaDB 10.4/bin"
-        "${PROGRAM_FILES_32}/MariaDB 10.4/bin"
         "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.7/bin"
         "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.6/bin"
         "${PROGRAM_FILES_64}/MySQL/MySQL Server 5.5/bin"
@@ -275,6 +276,10 @@ if( WIN32 )
         "$ENV{SystemDrive}/MySQL/MySQL Server 5.1/bin/opt"
         "c:/msys/local/include"
         "$ENV{MYSQL_ROOT}/bin"
+        "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MariaDB 10.4;INSTALLDIR]/bin"
+        "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MariaDB 10.4 (x64);INSTALLDIR]/bin"
+        "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MariaDB 10.5;INSTALLDIR]/bin"
+        "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MariaDB 10.5 (x64);INSTALLDIR]/bin"
      DOC
         "path to your mysql binary."
     )

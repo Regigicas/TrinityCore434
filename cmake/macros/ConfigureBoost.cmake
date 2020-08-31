@@ -2,12 +2,12 @@ if(WIN32)
  set(BOOST_DEBUG ON)
   if(DEFINED ENV{BOOST_ROOT})
     set(BOOST_ROOT $ENV{BOOST_ROOT})
-    if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.0)
+    if(MSVC_TOOLSET_VERSION VERSION_LESS 140)
       set(BOOST_LIBRARYDIR ${BOOST_ROOT}/lib${PLATFORM}-msvc-12.0)
-    elseif(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.10)
+    elseif(MSVC_TOOLSET_VERSION VERSION_LESS 141)
       set(BOOST_LIBRARYDIR ${BOOST_ROOT}/lib${PLATFORM}-msvc-14.0)
     else()
-      if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.20)
+      if (MSVC_TOOLSET_VERSION VERSION_LESS 142)
         list(APPEND BOOST_LIBRARYDIR
           ${BOOST_ROOT}/lib${PLATFORM}-msvc-14.1
           ${BOOST_ROOT}/lib${PLATFORM}-msvc-14.0 )
@@ -24,11 +24,9 @@ if(WIN32)
   set(Boost_USE_STATIC_LIBS        ON)
   set(Boost_USE_MULTITHREADED      ON)
   set(Boost_USE_STATIC_RUNTIME     OFF)
-
-  add_definitions(-D_WIN32_WINNT=0x0601)
 endif()
 
-find_package(Boost 1.55 REQUIRED system filesystem thread program_options iostreams regex)
+find_package(Boost 1.60 REQUIRED system filesystem thread program_options iostreams regex)
 add_definitions(-DBOOST_DATE_TIME_NO_LIB)
 add_definitions(-DBOOST_REGEX_NO_LIB)
 add_definitions(-DBOOST_CHRONO_NO_LIB)
@@ -60,4 +58,8 @@ endif()
 
 if (Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
+  
+  if ("${CMAKE_SYSTEM_NAME}" MATCHES "Darwin") # MacOS es especial y por algun motivo no esta enlazando los pch bien, asi de momento para arreglar la build linkeamos al proyecto
+    link_libraries(${Boost_LIBRARIES})
+  endif()
 endif()
